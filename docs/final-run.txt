@@ -1,0 +1,80 @@
+﻿Input: Volkswagen Golf 110TSI Comfortline Petrol Automatic Front Wheel Drive
+Vehicle ID: 4749339721203712
+Confidence: 9
+
+Input: Volkswagen Golf 132TSI Automatic
+Vehicle ID: 5734502139691008
+Confidence: 6
+
+Input: Volkswagen Golf Alltrack 132TSI
+Vehicle ID: 5734502139691008
+Confidence: 6
+
+Input: VW Golf R with engine swap from Toyota 86 GT
+Vehicle ID: 5824662093168640
+Confidence: 6
+
+Input: Golf GTI
+Vehicle ID: 4628393442148352
+Confidence: 6
+
+Input: Golf cart
+Vehicle ID: null
+Confidence: 10
+
+Input: VW tiguan 162tsi allspace
+Vehicle ID: 5332080883924992
+Confidence: 8
+
+Input: R-Line Tiguan
+Vehicle ID: 5811435875598336
+Confidence: 6
+
+Input: Selling my tiguan r-line in exchange for a toyota camry hybrid
+Vehicle ID: 5811435875598336
+Confidence: 5
+
+Input: VW Amarok Ultimate
+Vehicle ID: 4951649860714496
+Confidence: 7
+
+Input: Amrok h/line 4x4
+Vehicle ID: 5997253340692480
+Confidence: 5
+
+Input: RAV4 GX 4x4
+Vehicle ID: 4637157457133568
+Confidence: 7
+
+Input: Toyota Camry Hybrid
+Vehicle ID: 6244675534979072
+Confidence: 6
+
+Input: Toyota Kluger Sports Hybrid (It's actually a Toyota 86 GT but the website didn't let me select that, sorry)
+Vehicle ID: 6434473696559104
+Confidence: 4
+
+Input: Toyota 86 GT Manual Petrol RWD
+Vehicle ID: 5027098813005824
+Confidence: 9
+
+Input: Toyota 86 GTS Apollo Manual
+Vehicle ID: 4655849154805760
+Confidence: 8
+
+Input: Toyota 86 GTS Auto
+Vehicle ID: 5871523743137792
+Confidence: 7
+
+Input: Toyota Corolla Ascent Sport Auto
+Vehicle ID: null
+Confidence: 9
+
+Input: Toyota Ascent Sports Hybrid
+Vehicle ID: 5118775628136448
+Confidence: 8
+
+Input: Toyota Kluger Black E/d 4WD
+Vehicle ID: 5387024387276800
+Confidence: 8
+
