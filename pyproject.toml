@@ -44,6 +44,10 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 # word-list literals via "a b c".split() are more readable than 40-element lists
 ignore = ["SIM905"]
 
+[tool.ruff.lint.per-file-ignores]
+# inline HTML/CSS template; line-length rules don't usefully apply
+"scripts/demo_server.py" = ["E501"]
+
 [tool.mypy]
 strict = true
 packages = ["vehicle_matcher"]
