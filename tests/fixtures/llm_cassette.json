@@ -1,0 +1,16 @@
+{
+ "33b231b1401c1c2c4732da26c85d124e4e7a8a88590b0bab97f47c2bcd4a93db": {
+  "badge_tokens": [
+   "gt"
+  ],
+  "make": "Toyota",
+  "model": "86",
+  "correction_applied": true,
+  "distractor_stripped": true,
+  "fuel": null,
+  "transmission": null,
+  "drive": null,
+  "modified_vehicle": false,
+  "non_vehicle": false
+ }
+}

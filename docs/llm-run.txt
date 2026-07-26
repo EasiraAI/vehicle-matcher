@@ -1,0 +1,190 @@
+﻿Input: Volkswagen Golf 110TSI Comfortline Petrol Automatic Front Wheel Drive
+Vehicle ID: 4749339721203712
+Confidence: 9
+  tier=rules candidates=8 extracted=ExtractedVehicle(make='Volkswagen', model='Golf', badge_tokens=['110tsi', 'comfortline'], transmission='Automatic', fuel='Petrol', drive='Front Wheel Drive', weak_fuel=None, weak_transmission=None, unknown_tokens=[], flags=Flags(correction_applied=False, distractor_stripped=False, modified_vehicle=False, non_vehicle=False))
+      13.94  conflicts=0  listings= 22  Volkswagen Golf 110TSI Comfortline | Automatic, Petrol, Front Wheel Drive
+      10.59  conflicts=0  listings= 26  Volkswagen Golf 110TSI Trendline | Automatic, Petrol, Front Wheel Drive
+      10.50  conflicts=0  listings= 19  Volkswagen Golf 110TSI Highline | Automatic, Petrol, Front Wheel Drive
+       7.43  conflicts=0  listings= 15  Volkswagen Golf GTI | Automatic, Petrol, Front Wheel Drive
+       6.58  conflicts=1  listings=  4  Volkswagen Golf 110TSI Trendline | Manual, Petrol, Front Wheel Drive
+
+Input: Volkswagen Golf 132TSI Automatic
+Vehicle ID: 5734502139691008
+Confidence: 6
+  tier=rules candidates=8 extracted=ExtractedVehicle(make='Volkswagen', model='Golf', badge_tokens=['132tsi'], transmission='Automatic', fuel=None, drive=None, weak_fuel='Petrol', weak_transmission=None, unknown_tokens=[], flags=Flags(correction_applied=False, distractor_stripped=False, modified_vehicle=False, non_vehicle=False))
+       9.58  conflicts=0  listings=  4  Volkswagen Golf Alltrack 132TSI | Automatic, Petrol, Four Wheel Drive
+       9.28  conflicts=0  listings=  6  Volkswagen Golf Alltrack 132TSI Premium | Automatic, Petrol, Four Wheel Drive
+       7.11  conflicts=0  listings= 28  Volkswagen Golf R | Automatic, Petrol, Four Wheel Drive
+       6.93  conflicts=0  listings= 15  Volkswagen Golf GTI | Automatic, Petrol, Front Wheel Drive
+       6.69  conflicts=0  listings= 26  Volkswagen Golf 110TSI Trendline | Automatic, Petrol, Front Wheel Drive
+
+Input: Volkswagen Golf Alltrack 132TSI
+Vehicle ID: 5734502139691008
+Confidence: 6
+  tier=rules candidates=8 extracted=ExtractedVehicle(make='Volkswagen', model='Golf', badge_tokens=['alltrack', '132tsi'], transmission=None, fuel=None, drive=None, weak_fuel='Petrol', weak_transmission=None, unknown_tokens=[], flags=Flags(correction_applied=False, distractor_stripped=False, modified_vehicle=False, non_vehicle=False))
+      10.98  conflicts=0  listings=  4  Volkswagen Golf Alltrack 132TSI | Automatic, Petrol, Four Wheel Drive
+      10.68  conflicts=0  listings=  6  Volkswagen Golf Alltrack 132TSI Premium | Automatic, Petrol, Four Wheel Drive
+       5.11  conflicts=0  listings= 28  Volkswagen Golf R | Automatic, Petrol, Four Wheel Drive
+       4.93  conflicts=0  listings= 15  Volkswagen Golf GTI | Automatic, Petrol, Front Wheel Drive
+       4.69  conflicts=0  listings= 26  Volkswagen Golf 110TSI Trendline | Automatic, Petrol, Front Wheel Drive
+
+Input: VW Golf R with engine swap from Toyota 86 GT
+Vehicle ID: 5824662093168640
+Confidence: 6
+  tier=rules candidates=8 extracted=ExtractedVehicle(make='Volkswagen', model='Golf', badge_tokens=['r'], transmission=None, fuel=None, drive=None, weak_fuel=None, weak_transmission=None, unknown_tokens=[], flags=Flags(correction_applied=False, distractor_stripped=False, modified_vehicle=True, non_vehicle=False))
+       9.01  conflicts=0  listings= 28  Volkswagen Golf R | Automatic, Petrol, Four Wheel Drive
+       5.43  conflicts=0  listings= 15  Volkswagen Golf GTI | Automatic, Petrol, Front Wheel Drive
+       5.19  conflicts=0  listings= 26  Volkswagen Golf 110TSI Trendline | Automatic, Petrol, Front Wheel Drive
+       5.14  conflicts=0  listings= 22  Volkswagen Golf 110TSI Comfortline | Automatic, Petrol, Front Wheel Drive
+       5.10  conflicts=0  listings= 19  Volkswagen Golf 110TSI Highline | Automatic, Petrol, Front Wheel Drive
+
+Input: Golf GTI
+Vehicle ID: 4628393442148352
+Confidence: 6
+  tier=rules candidates=8 extracted=ExtractedVehicle(make=None, model='Golf', badge_tokens=['gti'], transmission=None, fuel=None, drive=None, weak_fuel=None, weak_transmission=None, unknown_tokens=[], flags=Flags(correction_applied=False, distractor_stripped=False, modified_vehicle=False, non_vehicle=False))
+       5.83  conflicts=0  listings= 15  Volkswagen Golf GTI | Automatic, Petrol, Front Wheel Drive
+       2.61  conflicts=0  listings= 28  Volkswagen Golf R | Automatic, Petrol, Four Wheel Drive
+       2.19  conflicts=0  listings= 26  Volkswagen Golf 110TSI Trendline | Automatic, Petrol, Front Wheel Drive
+       2.14  conflicts=0  listings= 22  Volkswagen Golf 110TSI Comfortline | Automatic, Petrol, Front Wheel Drive
+       2.10  conflicts=0  listings= 19  Volkswagen Golf 110TSI Highline | Automatic, Petrol, Front Wheel Drive
+
+Input: Golf cart
+Vehicle ID: null
+Confidence: 10
+  tier=rules candidates=0 extracted=ExtractedVehicle(make=None, model=None, badge_tokens=[], transmission=None, fuel=None, drive=None, weak_fuel=None, weak_transmission=None, unknown_tokens=[], flags=Flags(correction_applied=False, distractor_stripped=False, modified_vehicle=False, non_vehicle=True))
+
+Input: VW tiguan 162tsi allspace
+Vehicle ID: 5332080883924992
+Confidence: 8
+  tier=rules candidates=8 extracted=ExtractedVehicle(make='Volkswagen', model='Tiguan', badge_tokens=['162tsi', 'allspace'], transmission=None, fuel=None, drive=None, weak_fuel='Petrol', weak_transmission=None, unknown_tokens=[], flags=Flags(correction_applied=False, distractor_stripped=False, modified_vehicle=False, non_vehicle=False))
+      11.19  conflicts=0  listings= 37  Volkswagen Tiguan 162TSI Highline Allspace | Automatic, Petrol, Four Wheel Drive
+       8.16  conflicts=0  listings= 33  Volkswagen Tiguan 162TSI Highline | Automatic, Petrol, Four Wheel Drive
+       7.42  conflicts=0  listings= 10  Volkswagen Tiguan 132TSI Comfortline Allspace | Automatic, Petrol, Four Wheel Drive
+       7.18  conflicts=0  listings=  4  Volkswagen Tiguan 110TSI Comfortline Allspace | Automatic, Petrol, Front Wheel Drive
+       4.45  conflicts=0  listings= 11  Volkswagen Tiguan 132TSI Comfortline | Automatic, Petrol, Four Wheel Drive
+
+Input: R-Line Tiguan
+Vehicle ID: 5811435875598336
+Confidence: 6
+  tier=rules candidates=8 extracted=ExtractedVehicle(make=None, model='Tiguan', badge_tokens=['r-line'], transmission=None, fuel=None, drive=None, weak_fuel=None, weak_transmission=None, unknown_tokens=[], flags=Flags(correction_applied=False, distractor_stripped=False, modified_vehicle=False, non_vehicle=False))
+       4.99  conflicts=0  listings= 13  Volkswagen Tiguan 132TSI R-Line Edition | Automatic, Petrol, Four Wheel Drive
+       2.26  conflicts=0  listings= 33  Volkswagen Tiguan 162TSI Highline | Automatic, Petrol, Four Wheel Drive
+       1.95  conflicts=0  listings= 11  Volkswagen Tiguan 132TSI Comfortline | Automatic, Petrol, Four Wheel Drive
+       1.89  conflicts=0  listings= 37  Volkswagen Tiguan 162TSI Highline Allspace | Automatic, Petrol, Four Wheel Drive
+       1.62  conflicts=0  listings=  3  Volkswagen Tiguan 110TSI Trendline | Automatic, Petrol, Front Wheel Drive
+
+Input: Selling my tiguan r-line in exchange for a toyota camry hybrid
+Vehicle ID: 5811435875598336
+Confidence: 5
+  tier=rules candidates=8 extracted=ExtractedVehicle(make=None, model='Tiguan', badge_tokens=['r-line'], transmission=None, fuel=None, drive=None, weak_fuel=None, weak_transmission=None, unknown_tokens=[], flags=Flags(correction_applied=False, distractor_stripped=True, modified_vehicle=False, non_vehicle=False))
+       4.99  conflicts=0  listings= 13  Volkswagen Tiguan 132TSI R-Line Edition | Automatic, Petrol, Four Wheel Drive
+       2.26  conflicts=0  listings= 33  Volkswagen Tiguan 162TSI Highline | Automatic, Petrol, Four Wheel Drive
+       1.95  conflicts=0  listings= 11  Volkswagen Tiguan 132TSI Comfortline | Automatic, Petrol, Four Wheel Drive
+       1.89  conflicts=0  listings= 37  Volkswagen Tiguan 162TSI Highline Allspace | Automatic, Petrol, Four Wheel Drive
+       1.62  conflicts=0  listings=  3  Volkswagen Tiguan 110TSI Trendline | Automatic, Petrol, Front Wheel Drive
+
+Input: VW Amarok Ultimate
+Vehicle ID: 4951649860714496
+Confidence: 7
+  tier=rules candidates=11 extracted=ExtractedVehicle(make='Volkswagen', model='Amarok', badge_tokens=['ultimate'], transmission=None, fuel=None, drive=None, weak_fuel=None, weak_transmission=None, unknown_tokens=[], flags=Flags(correction_applied=False, distractor_stripped=False, modified_vehicle=False, non_vehicle=False))
+       8.43  conflicts=0  listings= 15  Volkswagen Amarok TDI580 Ultimate | Automatic, Diesel, Four Wheel Drive
+       5.29  conflicts=0  listings= 37  Volkswagen Amarok TDI550 Highline | Automatic, Diesel, Four Wheel Drive
+       5.08  conflicts=0  listings= 18  Volkswagen Amarok TDI420 Core | Automatic, Diesel, Four Wheel Drive
+       5.03  conflicts=0  listings= 15  Volkswagen Amarok TDI550 Core | Automatic, Diesel, Four Wheel Drive
+       4.89  conflicts=0  listings=  9  Volkswagen Amarok TDI550 Sportline | Automatic, Diesel, Four Wheel Drive
+
+Input: Amrok h/line 4x4
+Vehicle ID: 5997253340692480
+Confidence: 5
+  tier=rules candidates=14 extracted=ExtractedVehicle(make=None, model=None, badge_tokens=['highline'], transmission=None, fuel=None, drive='Four Wheel Drive', weak_fuel=None, weak_transmission=None, unknown_tokens=['amrok'], flags=Flags(correction_applied=False, distractor_stripped=False, modified_vehicle=False, non_vehicle=False))
+       5.89  conflicts=0  listings= 37  Volkswagen Amarok TDI550 Highline | Automatic, Diesel, Four Wheel Drive
+       5.09  conflicts=0  listings=  9  Volkswagen Amarok TDI580 Highline Black | Automatic, Diesel, Four Wheel Drive
+       3.66  conflicts=0  listings= 33  Volkswagen Tiguan 162TSI Highline | Automatic, Petrol, Four Wheel Drive
+       3.29  conflicts=0  listings= 37  Volkswagen Tiguan 162TSI Highline Allspace | Automatic, Petrol, Four Wheel Drive
+       2.28  conflicts=0  listings= 18  Volkswagen Amarok TDI420 Core | Automatic, Diesel, Four Wheel Drive
+
+Input: RAV4 GX 4x4
+Vehicle ID: 4637157457133568
+Confidence: 7
+  tier=rules candidates=11 extracted=ExtractedVehicle(make=None, model='RAV4', badge_tokens=['gx'], transmission=None, fuel=None, drive='Four Wheel Drive', weak_fuel=None, weak_transmission=None, unknown_tokens=[], flags=Flags(correction_applied=False, distractor_stripped=False, modified_vehicle=False, non_vehicle=False))
+       6.98  conflicts=0  listings= 25  Toyota RAV4 GX | Automatic, Hybrid-Petrol, Four Wheel Drive
+       3.60  conflicts=1  listings= 38  Toyota RAV4 GX | Automatic, Petrol, Front Wheel Drive
+       3.55  conflicts=0  listings= 23  Toyota RAV4 Cruiser | Automatic, Hybrid-Petrol, Four Wheel Drive
+       3.54  conflicts=0  listings= 22  Toyota RAV4 Edge | Automatic, Petrol, Four Wheel Drive
+       3.43  conflicts=0  listings= 15  Toyota RAV4 GXL | Automatic, Hybrid-Petrol, Four Wheel Drive
+
+Input: Toyota Camry Hybrid
+Vehicle ID: 6244675534979072
+Confidence: 6
+  tier=rules candidates=7 extracted=ExtractedVehicle(make='Toyota', model='Camry', badge_tokens=[], transmission=None, fuel='Hybrid-Petrol', drive=None, weak_fuel=None, weak_transmission=None, unknown_tokens=[], flags=Flags(correction_applied=False, distractor_stripped=False, modified_vehicle=False, non_vehicle=False))
+       7.95  conflicts=0  listings= 88  Toyota Camry Ascent | Automatic, Hybrid-Petrol, Front Wheel Drive
+       7.29  conflicts=0  listings=  9  Toyota Camry SL | Automatic, Hybrid-Petrol, Front Wheel Drive
+       7.25  conflicts=0  listings= 32  Toyota Camry Ascent Sport | Automatic, Hybrid-Petrol, Front Wheel Drive
+       4.22  conflicts=1  listings= 41  Toyota Camry Ascent | Automatic, Petrol, Front Wheel Drive
+       4.21  conflicts=1  listings= 40  Toyota Camry SX | Automatic, Petrol, Front Wheel Drive
+
+Input: Toyota Kluger Sports Hybrid (It's actually a Toyota 86 GT but the website didn't let me select that, sorry)
+Vehicle ID: 6434473696559104
+Confidence: 4
+  tier=rules candidates=6 extracted=ExtractedVehicle(make='Toyota', model='86', badge_tokens=['gt'], transmission=None, fuel=None, drive=None, weak_fuel=None, weak_transmission=None, unknown_tokens=['actually', 'website', 'select'], flags=Flags(correction_applied=True, distractor_stripped=False, modified_vehicle=False, non_vehicle=False))
+       8.42  conflicts=0  listings=  3  Toyota 86 GT | Automatic, Petrol, Rear Wheel Drive
+       8.00  conflicts=0  listings=  0  Toyota 86 GT | Manual, Petrol, Rear Wheel Drive
+       4.93  conflicts=0  listings=  2  Toyota 86 GTS | Manual, Petrol, Rear Wheel Drive
+       4.60  conflicts=0  listings=  0  Toyota 86 GTS | Automatic, Petrol, Rear Wheel Drive
+       4.01  conflicts=0  listings=  1  Toyota 86 GTS Apollo Blue | Automatic, Petrol, Rear Wheel Drive
+
+Input: Toyota 86 GT Manual Petrol RWD
+Vehicle ID: 5027098813005824
+Confidence: 9
+  tier=rules candidates=6 extracted=ExtractedVehicle(make='Toyota', model='86', badge_tokens=['gt'], transmission='Manual', fuel='Petrol', drive='Rear Wheel Drive', weak_fuel=None, weak_transmission=None, unknown_tokens=[], flags=Flags(correction_applied=False, distractor_stripped=False, modified_vehicle=False, non_vehicle=False))
+      11.00  conflicts=0  listings=  0  Toyota 86 GT | Manual, Petrol, Rear Wheel Drive
+       7.93  conflicts=0  listings=  2  Toyota 86 GTS | Manual, Petrol, Rear Wheel Drive
+       7.92  conflicts=1  listings=  3  Toyota 86 GT | Automatic, Petrol, Rear Wheel Drive
+       7.01  conflicts=0  listings=  1  Toyota 86 GTS Apollo Blue | Manual, Petrol, Rear Wheel Drive
+       4.10  conflicts=1  listings=  0  Toyota 86 GTS | Automatic, Petrol, Rear Wheel Drive
+
+Input: Toyota 86 GTS Apollo Manual
+Vehicle ID: 4655849154805760
+Confidence: 8
+  tier=rules candidates=6 extracted=ExtractedVehicle(make='Toyota', model='86', badge_tokens=['gts', 'apollo'], transmission='Manual', fuel=None, drive=None, weak_fuel=None, weak_transmission=None, unknown_tokens=[], flags=Flags(correction_applied=False, distractor_stripped=False, modified_vehicle=False, non_vehicle=False))
+      10.81  conflicts=0  listings=  1  Toyota 86 GTS Apollo Blue | Manual, Petrol, Rear Wheel Drive
+       8.33  conflicts=0  listings=  2  Toyota 86 GTS | Manual, Petrol, Rear Wheel Drive
+       7.31  conflicts=1  listings=  1  Toyota 86 GTS Apollo Blue | Automatic, Petrol, Rear Wheel Drive
+       4.60  conflicts=0  listings=  0  Toyota 86 GT | Manual, Petrol, Rear Wheel Drive
+       4.50  conflicts=1  listings=  0  Toyota 86 GTS | Automatic, Petrol, Rear Wheel Drive
+
+Input: Toyota 86 GTS Auto
+Vehicle ID: 5871523743137792
+Confidence: 7
+  tier=rules candidates=6 extracted=ExtractedVehicle(make='Toyota', model='86', badge_tokens=['gts'], transmission='Automatic', fuel=None, drive=None, weak_fuel=None, weak_transmission=None, unknown_tokens=[], flags=Flags(correction_applied=False, distractor_stripped=False, modified_vehicle=False, non_vehicle=False))
+       9.00  conflicts=0  listings=  0  Toyota 86 GTS | Automatic, Petrol, Rear Wheel Drive
+       8.41  conflicts=0  listings=  1  Toyota 86 GTS Apollo Blue | Automatic, Petrol, Rear Wheel Drive
+       6.02  conflicts=0  listings=  3  Toyota 86 GT | Automatic, Petrol, Rear Wheel Drive
+       5.83  conflicts=1  listings=  2  Toyota 86 GTS | Manual, Petrol, Rear Wheel Drive
+       4.91  conflicts=1  listings=  1  Toyota 86 GTS Apollo Blue | Manual, Petrol, Rear Wheel Drive
+
+Input: Toyota Corolla Ascent Sport Auto
+Vehicle ID: null
+Confidence: 9
+  tier=rules candidates=0 extracted=ExtractedVehicle(make='Toyota', model='Corolla', badge_tokens=['ascent', 'sport'], transmission='Automatic', fuel=None, drive=None, weak_fuel=None, weak_transmission=None, unknown_tokens=[], flags=Flags(correction_applied=False, distractor_stripped=False, modified_vehicle=False, non_vehicle=False))
+
+Input: Toyota Ascent Sports Hybrid
+Vehicle ID: 5118775628136448
+Confidence: 8
+  tier=rules candidates=20 extracted=ExtractedVehicle(make='Toyota', model=None, badge_tokens=['ascent', 'sport'], transmission=None, fuel='Hybrid-Petrol', drive=None, weak_fuel=None, weak_transmission=None, unknown_tokens=[], flags=Flags(correction_applied=False, distractor_stripped=False, modified_vehicle=False, non_vehicle=False))
+       9.05  conflicts=0  listings= 32  Toyota Camry Ascent Sport | Automatic, Hybrid-Petrol, Front Wheel Drive
+       6.35  conflicts=0  listings= 88  Toyota Camry Ascent | Automatic, Hybrid-Petrol, Front Wheel Drive
+       5.44  conflicts=1  listings= 22  Toyota Camry Ascent Sport | Automatic, Petrol, Front Wheel Drive
+       2.62  conflicts=1  listings= 41  Toyota Camry Ascent | Automatic, Petrol, Front Wheel Drive
+       2.55  conflicts=0  listings= 23  Toyota RAV4 Cruiser | Automatic, Hybrid-Petrol, Four Wheel Drive
+
+Input: Toyota Kluger Black E/d 4WD
+Vehicle ID: 5387024387276800
+Confidence: 8
+  tier=rules candidates=8 extracted=ExtractedVehicle(make='Toyota', model='Kluger', badge_tokens=['black', 'edition'], transmission=None, fuel=None, drive='Four Wheel Drive', weak_fuel=None, weak_transmission=None, unknown_tokens=[], flags=Flags(correction_applied=False, distractor_stripped=False, modified_vehicle=False, non_vehicle=False))
+      11.66  conflicts=0  listings=  8  Toyota Kluger Black Edition | Automatic, Petrol, Four Wheel Drive
+       8.12  conflicts=1  listings=  7  Toyota Kluger Black Edition | Automatic, Petrol, Front Wheel Drive
+       5.66  conflicts=0  listings= 33  Toyota Kluger GX | Automatic, Petrol, Four Wheel Drive
+       5.58  conflicts=0  listings= 25  Toyota Kluger GXL | Automatic, Petrol, Four Wheel Drive
+       5.47  conflicts=0  listings= 17  Toyota Kluger Grande | Automatic, Petrol, Four Wheel Drive
+

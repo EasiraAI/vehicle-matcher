@@ -150,21 +150,40 @@ content hash, and a Haiku-class model at ~750 tokens/call (~$0.0014/call) puts
 the blended cost around $0.0001–0.0002 per description matched. The gate is the
 accuracy–cost dial: raise it for accuracy, lower it for cost.
 
+## Evaluation
+
+`scripts/evaluate.py` scores the matcher against a labeled set
+(`tests/fixtures/eval_labels.csv` — 21 cases, with multiple acceptable IDs
+where a description is genuinely ambiguous) and prints the scorecard that
+matters for this use case: top-1 accuracy, match/null precision and recall,
+MRR, and a reliability table checking that higher confidence actually means
+higher accuracy. Current result: 21/21, calibration monotone. The same
+scorecard runs as a regression gate in the test suite (`test_evaluation.py`,
+floor at 90%) — accuracy changes fail the build instead of being noticed
+later. Growing the CSV with labeled production samples is the intended
+feedback loop.
+
 ## Testing
 
-125 tests across five layers:
+137 tests across five layers:
 
 | layer | what it proves |
 |---|---|
 | unit (no DB, ms) | normalizer, extractor discourse rules, scorer weight semantics, calibrator branches, LLM contract (stub client, offline) |
 | property (hypothesis) | no exception on arbitrary unicode; confidence always 0–10; extraction/scoring deterministic |
-| integration (real PG) | load idempotency, row counts 59/1000, `it→id` repair, index existence, **recall invariant** (the true vehicle must be in the candidate set), SQL-injection-shaped text leaves the DB intact |
-| golden | 4 anchors exact; a **semantic expectation for every one of the 20 inputs** (`test_expected_results.py` — exact IDs where the answer is pinned, required properties where it's ambiguous); byte-level snapshot of the full run; CLI output format; LLM gating/routing with a stub extractor |
+| integration (real PG) | load idempotency, row counts 59/1000, `it→id` repair, index existence, **recall invariant** (the true vehicle must be in the candidate set), SQL-injection-shaped text leaves the DB intact; **fault injection** (a dead database raises — an outage must never impersonate a null match) and thread-consistency under concurrent use; destructive loader paths (abort-on-bad-counts, MV refresh semantics) against a scratch database created and dropped per run |
+| golden | 4 anchors exact; a **semantic expectation for every one of the 20 inputs** (`test_expected_results.py` — exact IDs where the answer is pinned, required properties where it's ambiguous); byte-level snapshot of the full run; CLI output format; LLM gating/routing with a stub extractor; the **evaluation scorecard as a gate** (accuracy floor, perfect absence detection, monotone calibration); a **recorded real API response** replayed offline (pins the actual wire shape against SDK/schema drift) |
 | robustness | degenerate/hostile input (unicode, emoji, 10k-char tokens, echoed output format, SQL-shaped text), token-permutation stability, case/whitespace insensitivity, end-to-end confidence monotonicity (more agreeing detail never lowers confidence; conflicting detail never raises it), DB unchanged after a hostile batch |
 
 CI (`.github/workflows/ci.yml`) runs lint → strict mypy → data-integrity
 checksum → full suite with a coverage gate (currently 93%, scorer/calibrator
 at ~100%) → a smoke run asserting 20 results.
+
+Nightly (`.github/workflows/nightly.yml`) carries the slow truths: **mutation
+testing** on scorer + calibrator (proves the tests fail when the logic is
+perturbed, not merely that lines were executed; report-only) and the
+**10k-vehicle scale benchmark with a hard p95 budget** — the next change that
+loses an index fails a build instead of a customer.
 
 ## Requirements coverage
 

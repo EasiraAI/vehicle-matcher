@@ -1,0 +1,65 @@
+name: nightly
+
+on:
+  schedule:
+    - cron: "20 17 * * *"  # ~03:20 AEST
+  workflow_dispatch:
+
+jobs:
+  # Mutation testing on the two files that ARE the product. Coverage proves
+  # the tests execute the code; mutation testing proves they fail when the
+  # logic is perturbed. Report-only: surviving mutants are a review queue,
+  # not a build blocker.
+  mutation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: python -m pip install -e ".[dev]" "mutmut<3"
+      - name: Run mutations (scorer + calibrator, unit tests only)
+        continue-on-error: true
+        run: python -m mutmut run
+      - name: Report
+        run: |
+          python -m mutmut results || true
+          python -m mutmut junitxml > mutmut-results.xml || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mutation-results
+          path: mutmut-results.xml
+          if-no-files-found: ignore
+
+  # Scale regression gate: the synthetic 10k/100k benchmark with a hard p95
+  # budget. Generous headroom over the ~42 ms observed locally, because CI
+  # runners are slower and noisier; the gate exists to catch order-of-
+  # magnitude regressions (a lost index, a seq scan), not millisecond drift.
+  perf:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s --health-timeout 2s --health-retries 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: python -m pip install -e .
+      - name: Benchmark with p95 budget
+        run: python scripts/synth_scale.py --p95-budget-ms 150 | tee scale-run.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: scale-evidence
+          path: scale-run.txt

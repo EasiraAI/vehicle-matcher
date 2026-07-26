@@ -10,6 +10,7 @@ Usage: python scripts/synth_scale.py [admin-dsn]
 
 from __future__ import annotations
 
+import argparse
 import random
 import statistics
 import sys
@@ -127,7 +128,7 @@ def build_synth(admin_dsn: str) -> str:
     return dsn
 
 
-def run_benchmark(dsn: str) -> None:
+def run_benchmark(dsn: str, p95_budget_ms: float | None = None) -> int:
     rng = random.Random(7)
     settings = Settings(dsn=dsn)
     with psycopg.connect(dsn) as conn:
@@ -156,12 +157,11 @@ def run_benchmark(dsn: str) -> None:
             matched += result.vehicle_id is not None
 
         timings.sort()
+        p95 = timings[int(len(timings) * 0.95)]
         print(f"\nvehicles={N_VEHICLES} listings={N_LISTINGS} queries={len(queries)}")
         print(f"matched: {matched}/{len(queries)}")
         print(
-            f"p50 {statistics.median(timings):.2f} ms   "
-            f"p95 {timings[int(len(timings) * 0.95)]:.2f} ms   "
-            f"max {timings[-1]:.2f} ms"
+            f"p50 {statistics.median(timings):.2f} ms   p95 {p95:.2f} ms   max {timings[-1]:.2f} ms"
         )
 
         for label, sql, args in (
@@ -181,13 +181,26 @@ def run_benchmark(dsn: str) -> None:
             for row in conn.execute(sql, args).fetchall():
                 print("  " + row[0])
 
+    if p95_budget_ms is not None and p95 > p95_budget_ms:
+        print(f"\nFAIL: p95 {p95:.2f} ms exceeds budget {p95_budget_ms:.0f} ms")
+        return 1
+    return 0
+
 
 if __name__ == "__main__":
-    admin = (
-        sys.argv[1]
-        if len(sys.argv) > 1
-        else "postgresql://postgres:postgres@localhost:5433/postgres"
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "admin_dsn",
+        nargs="?",
+        default="postgresql://postgres:postgres@localhost:5433/postgres",
     )
+    parser.add_argument(
+        "--p95-budget-ms",
+        type=float,
+        default=None,
+        help="exit non-zero if p95 latency exceeds this (regression gate)",
+    )
+    cli_args = parser.parse_args()
     print("building synthetic catalogue...")
-    synth_dsn = build_synth(admin)
-    run_benchmark(synth_dsn)
+    synth_dsn = build_synth(cli_args.admin_dsn)
+    sys.exit(run_benchmark(synth_dsn, cli_args.p95_budget_ms))
