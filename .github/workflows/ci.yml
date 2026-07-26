@@ -1,0 +1,46 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: vehicles
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d vehicles"
+          --health-interval 2s --health-timeout 2s --health-retries 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install -e ".[dev]"
+      - name: Lint
+        run: |
+          python -m ruff check src tests scripts
+          python -m ruff format --check src tests scripts
+      - name: Types
+        run: python -m mypy src
+      - name: Data integrity — challenge data must never be edited
+        run: |
+          echo "8e0503f94d61727bf395d9a3047c9a47d42e4a01cc83195fe3d1b6dd647e5281  data/data.sql" | sha256sum -c
+      - name: Load database
+        run: python scripts/setup_db.py
+      - name: Tests (unit, integration, golden — anchors + snapshot)
+        run: python -m pytest tests -q --cov=vehicle_matcher --cov-branch --cov-fail-under=85
+      - name: Smoke run — 20 results over inputs.txt
+        run: |
+          python -m vehicle_matcher.cli data/inputs.txt | tee /tmp/out.txt
+          test "$(grep -c '^Vehicle ID:' /tmp/out.txt)" = "20"
