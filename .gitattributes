@@ -1,0 +1,7 @@
+# Normalize source files to LF in the repository.
+* text=auto eol=lf
+
+# Challenge data must survive byte-identical on every platform — the CI
+# integrity checksum depends on it. Never let git touch line endings here.
+# (Must come after the global rule: the last matching line wins.)
+data/* -text
