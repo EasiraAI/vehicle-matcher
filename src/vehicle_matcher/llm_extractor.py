@@ -91,7 +91,10 @@ class LLMExtractor:
         if self._client is None:
             import anthropic
 
-            self._client = anthropic.Anthropic(timeout=self._settings.llm_timeout_s)
+            self._client = anthropic.Anthropic(
+                api_key=self._settings.anthropic_api_key,  # None -> SDK env fallback
+                timeout=self._settings.llm_timeout_s,
+            )
         response = self._client.messages.create(
             model=self._settings.llm_model,
             max_tokens=500,

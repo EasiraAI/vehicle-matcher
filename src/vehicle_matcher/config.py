@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,6 +22,8 @@ class Settings(BaseSettings):
     llm_model: str = "claude-haiku-4-5-20251001"
     llm_gate: int = 5  # escalate to the LLM only below this confidence
     llm_timeout_s: float = 3.0
+    # Unprefixed on purpose: the conventional variable name the SDK also uses.
+    anthropic_api_key: str | None = Field(default=None, validation_alias="ANTHROPIC_API_KEY")
 
 
 def get_settings() -> Settings:
