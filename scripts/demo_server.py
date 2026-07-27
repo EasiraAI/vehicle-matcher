@@ -148,6 +148,7 @@ class Handler(BaseHTTPRequestHandler):
         payload = {
             "vehicle_id": result.vehicle_id,
             "confidence": result.confidence,
+            "matcher_version": result.matcher_version,
             "tier": result.debug.tier,
             "candidate_count": result.debug.candidate_count,
             "vehicle": top.model_dump() if (result.vehicle_id and top) else None,

@@ -70,4 +70,9 @@ class MatchDebug(BaseModel):
 class MatchResult(BaseModel):
     vehicle_id: str | None
     confidence: int
+    # Provenance: package version + a fingerprint of the scoring weights,
+    # vocabulary, and thresholds that produced this decision. Two results with
+    # the same matcher_version are comparable; a retune changes the fingerprint,
+    # so historical decisions stay attributable to the logic that made them.
+    matcher_version: str = ""
     debug: MatchDebug

@@ -109,6 +109,50 @@ def extract(text: str, vocab: Vocabulary) -> ExtractedVehicle:
     return extracted
 
 
+def canonicalize(ev: ExtractedVehicle, vocab: Vocabulary) -> ExtractedVehicle:
+    """Map an externally produced extraction (e.g. LLM output) onto the same
+    canonical vocabulary the rule extractor uses.
+
+    Found by the shadow audit: the LLM occasionally returns "VW" unexpanded,
+    promotes a badge word to model ("Ascent"), or files a fuel word under
+    badge_tokens. Left raw, those become spurious conflicts and false nulls.
+    The vocabulary arbitrates each word's role; genuinely unknown values
+    (Ford, Ranger) pass through untouched so absence detection still works.
+    """
+    out = ev.model_copy(deep=True)
+
+    if out.make:
+        entry = vocab.lookup(out.make.lower())
+        if entry is not None and entry.attribute == "make":
+            out.make = entry.canonical
+
+    if out.model:
+        entry = vocab.lookup(out.model.lower())
+        if entry is not None:
+            if entry.attribute == "model":
+                out.model = entry.canonical
+            elif entry.attribute == "badge":
+                # a badge word was promoted to model — demote it back
+                if entry.canonical not in out.badge_tokens:
+                    out.badge_tokens.insert(0, entry.canonical)
+                out.model = None
+
+    tokens: list[str] = []
+    for raw in out.badge_tokens:
+        token = raw.lower()
+        entry = vocab.lookup(token)
+        if entry is None:
+            tokens.append(token)
+        elif entry.attribute == "badge":
+            tokens.append(entry.canonical)
+        else:
+            # an attribute word filed under badge — move it where it belongs
+            _apply(out, entry.attribute, entry.canonical, weak=entry.weak)
+    out.badge_tokens = list(dict.fromkeys(tokens))
+
+    return out
+
+
 def _apply(ev: ExtractedVehicle, attribute: str, canonical: str, weak: bool = False) -> None:
     if attribute == "make":
         if ev.make is None:

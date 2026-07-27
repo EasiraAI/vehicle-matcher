@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import sys
 from pathlib import Path
 
@@ -17,7 +18,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("inputs", type=Path, help="text file, one description per line")
     parser.add_argument("--debug", action="store_true", help="show score breakdown per input")
+    parser.add_argument(
+        "--log", action="store_true", help="emit the structured JSON match log to stderr"
+    )
     args = parser.parse_args(argv)
+
+    if args.log:
+        handler = logging.StreamHandler(sys.stderr)
+        match_logger = logging.getLogger("vehicle_matcher")
+        match_logger.addHandler(handler)
+        match_logger.setLevel(logging.INFO)
 
     settings = get_settings()
     fallback = None

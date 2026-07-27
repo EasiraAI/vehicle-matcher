@@ -165,7 +165,7 @@ feedback loop.
 
 ## Testing
 
-137 tests across five layers:
+148 tests across five layers:
 
 | layer | what it proves |
 |---|---|
@@ -217,12 +217,34 @@ vehicle-matcher/
 The matcher is a stateless library: one `Matcher` per process holding a DB
 connection and a cached vocabulary. For a realtime pipeline, wrap it in a
 queue consumer or HTTP service with a `psycopg_pool` connection pool; per-call
-work is one SELECT. `MatchDebug` (extraction, candidate count, top score,
-margin, tier) is designed to be logged as structured JSON per match — match
-rate, null rate, low-confidence rate, and escalation rate are the operational
-dials, and a rising low-confidence rate is the vocabulary-drift alarm. The
-materialized listing stats refresh out of band (`REFRESH MATERIALIZED VIEW
-CONCURRENTLY vehicle_listing_stats`), never on the request path.
+work is one SELECT. The materialized listing stats refresh out of band
+(`REFRESH MATERIALIZED VIEW CONCURRENTLY vehicle_listing_stats`), never on
+the request path.
+
+**Structured match log.** Every match emits one JSON event on the
+`vehicle_matcher.match` logger (`--log` on the CLI surfaces it): input hash
+and length (the raw text is deliberately not logged), extraction record,
+candidate count, top score, margin, result, confidence, tier, matcher
+version, duration. Match rate, null rate, low-confidence rate (the
+vocabulary-drift alarm), escalation rate (the cost alarm), and latency
+percentiles are all derivable from this stream.
+
+**Decision provenance.** Every result carries `matcher_version` — package
+version plus a fingerprint of the weights, vocabulary, and thresholds that
+produced it. Historical decisions stay attributable and reproducible across
+retunes; two results are comparable iff their versions match.
+
+**Shadow audit.** The routing gate only re-examines *low*-confidence results,
+so a confidently wrong extraction would otherwise never get a second opinion.
+`scripts/shadow_audit.py` samples high-confidence matches, re-extracts the
+text with the LLM, re-runs the same deterministic pipeline, and reports
+disagreements for review; the disagreement rate over time is the drift metric
+for the blind spot the gate can't see. Its first live run earned its keep:
+it exposed that LLM extractions bypassed vocabulary canonicalization
+("VW" unexpanded, a badge word promoted to model), now fixed in
+`extractor.canonicalize` and pinned by unit tests — and it also showed the
+deterministic scorer absorbing an LLM fuel hallucination without changing
+the answer, which is the "extractors never pick IDs" principle doing its job.
 
 ## Limitations & roadmap (deliberate, in priority order)
 
@@ -231,17 +253,14 @@ CONCURRENTLY vehicle_listing_stats`), never on the request path.
    not statistically calibrated. With production labels (or mined listing-page
    data), a gradient-boosted ranker plus isotonic calibration replaces both,
    and the current scorer becomes the cold-start fallback.
-2. **High-confidence audit loop.** The LLM gate only re-examines *low*
-   confidence results, so a confidently-wrong extraction never gets a second
-   opinion. Production needs sampled shadow escalation of high-confidence
-   matches with a disagreement alarm.
-3. **In-process catalogue cache** for the hot path; Postgres stays the source
+2. **In-process catalogue cache** for the hot path; Postgres stays the source
    of truth. Kills the make-arm latency tail and the per-call round-trip.
-4. **Alias mining.** The alias table is seeded by hand; at 10k vehicles it
+3. **Alias mining.** The alias table is seeded by hand; at 10k vehicles it
    needs tooling (mine candidate surface forms from unmatched tokens,
-   LLM-assisted curation, human review queue).
-5. **Decision versioning.** Stamp matcher version + weights hash on every
-   result so historical confidences stay reproducible as tuning evolves.
+   LLM-assisted curation, human review queue). The structured log's
+   unknown-token stream is the ranked backlog.
+4. **Scheduled shadow audit.** The audit script exists; production runs it
+   continuously on sampled traffic with an alert on the disagreement rate.
 
 Deliberately **not** built: ORM, API service, vector DB, Elasticsearch,
 fine-tuning. Each would contradict the cost/complexity discipline at this
