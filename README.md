@@ -265,3 +265,10 @@ or operability; the hybrid spends money only where the text is genuinely hard.
 2. Peeters & Bizer — *Entity Matching using Large Language Models*,
    [arXiv:2310.11244](https://arxiv.org/abs/2310.11244), 2023. Why the LLM
    earns a place — and why only behind a gate.
+
+---
+
+*AI assistance disclosure: Claude (Anthropic) was used as a development
+assistant — README formatting, parts of the test suite, and code formatting
+passes. Architecture and design decisions are my own; all code, generated or
+not, passes the same review, test, and CI gates.*
