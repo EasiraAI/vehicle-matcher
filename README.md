@@ -115,7 +115,7 @@ For the remaining 16 inputs the full output is snapshot-locked — any behaviour
 change shows up in review as a diff. Spot checks worth calling out: the
 Kluger→86 GT correction resolves to the 86 GT with the tie broken by listing
 count; "Amrok h/line 4x4" reaches Amarok TDI550 Highline through fuzzy
-retrieval at deliberately modest confidence; "Toyota Corolla Ascent Sport
+retrieval at modest confidence; "Toyota Corolla Ascent Sport
 Auto" is a confident null (Corolla is real and absent) even though Camry
 Ascent Sport candidates score superficially well.
 
@@ -179,11 +179,11 @@ CI (`.github/workflows/ci.yml`) runs lint → strict mypy → data-integrity
 checksum → full suite with a coverage gate (currently 93%, scorer/calibrator
 at ~100%) → a smoke run asserting 20 results.
 
-Nightly (`.github/workflows/nightly.yml`) carries the slow truths: **mutation
+Nightly (`.github/workflows/nightly.yml`) runs the slow checks: **mutation
 testing** on scorer + calibrator (proves the tests fail when the logic is
 perturbed, not merely that lines were executed; report-only) and the
-**10k-vehicle scale benchmark with a hard p95 budget** — the next change that
-loses an index fails a build instead of a customer.
+**10k-vehicle scale benchmark with a hard p95 budget**, so a change that
+loses an index fails a build rather than degrading in production.
 
 ## Requirements coverage
 
@@ -198,7 +198,7 @@ loses an index fails a build instead of a customer.
 | `data.sql` not edited | repair happens in the loader; CI pins the file's sha256 |
 | scales to 10k+ vehicles / 100k+ listings | trigram/GIN infrastructure + [scale evidence](docs/scale-evidence.txt): p50 7.8 ms, index plans captured |
 | accuracy > cost > latency | deterministic core ≈ free and single-digit-ms; LLM spend only below the confidence gate; accuracy evidenced by anchors + validation matrix |
-| production engineering practices | src layout, typed (mypy strict), linted, CI as code, migrations, healthchecked compose, coverage gate, structured debug output |
+| production engineering practices | src layout, typed (mypy strict), linted, CI as code, migrations, healthchecked compose, coverage gate, versioned decisions + structured match log |
 
 ## Repository layout
 
@@ -206,7 +206,7 @@ loses an index fails a build instead of a customer.
 vehicle-matcher/
 ├── data/                  # challenge files, byte-identical (CI-checksummed)
 ├── migrations/            # search infrastructure + vocabulary seed (append-only)
-├── scripts/               # setup_db.py (idempotent loader), synth_scale.py (evidence)
+├── scripts/               # loader, scale benchmark, eval scorecard, shadow audit, demo UI
 ├── src/vehicle_matcher/   # normalizer → extractor → retrieval → scorer → calibrator
 ├── tests/                 # unit / integration / golden / robustness
 └── docs/                  # final-run.txt, scale-evidence.txt
@@ -239,12 +239,12 @@ so a confidently wrong extraction would otherwise never get a second opinion.
 `scripts/shadow_audit.py` samples high-confidence matches, re-extracts the
 text with the LLM, re-runs the same deterministic pipeline, and reports
 disagreements for review; the disagreement rate over time is the drift metric
-for the blind spot the gate can't see. Its first live run earned its keep:
-it exposed that LLM extractions bypassed vocabulary canonicalization
-("VW" unexpanded, a badge word promoted to model), now fixed in
-`extractor.canonicalize` and pinned by unit tests — and it also showed the
-deterministic scorer absorbing an LLM fuel hallucination without changing
-the answer, which is the "extractors never pick IDs" principle doing its job.
+for the blind spot the gate can't see. Its first run found a real defect:
+LLM extractions were bypassing vocabulary canonicalization ("VW" unexpanded,
+a badge word promoted to model), since fixed in `extractor.canonicalize` and
+pinned by unit tests. The same run also showed the deterministic scorer
+absorbing an LLM fuel hallucination without changing the answer — the
+"extractors never pick IDs" principle working as intended.
 
 ## Limitations & roadmap (deliberate, in priority order)
 
