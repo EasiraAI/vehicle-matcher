@@ -1,5 +1,10 @@
 # Vehicle Matcher
 
+[![ci](https://github.com/IbramGhali/Vehicle-matcher/actions/workflows/ci.yml/badge.svg)](https://github.com/IbramGhali/Vehicle-matcher/actions/workflows/ci.yml)
+[![nightly](https://github.com/IbramGhali/Vehicle-matcher/actions/workflows/nightly.yml/badge.svg)](https://github.com/IbramGhali/Vehicle-matcher/actions/workflows/nightly.yml)
+![python](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)
+![postgres](https://img.shields.io/badge/postgres-16-4169E1?logo=postgresql&logoColor=white)
+
 Matches free-text marketplace car descriptions to a vehicle in a PostgreSQL
 catalogue, with a calibrated 0–10 confidence score — including confident
 *absence* ("Ford Ranger" → `null` at confidence 10).
@@ -9,6 +14,27 @@ Input: VW Amarok Ultimate
 Vehicle ID: 4951649860714496
 Confidence: 7
 ```
+
+### At a glance
+
+| | |
+|---|---|
+| **Accuracy** | 4/4 challenge anchors exact · 21/21 on the labeled eval set · MRR 1.000 |
+| **Latency** | p50 **7.8 ms** / p95 **41.8 ms** at 10k vehicles & 100k listings, index plans captured |
+| **Cost** | deterministic path ≈ $0 · LLM only below the confidence gate (~$0.0001–0.0002/description blended) |
+| **Verification** | 148 tests in 5 layers · 93% branch coverage (scoring core ~100%) · nightly mutation testing + perf budget |
+| **Operability** | versioned decisions · structured JSON match log · shadow audit for the high-confidence blind spot |
+
+**Contents** · [Quickstart](#quickstart) · [How it works](#how-it-works) ·
+[Design decisions](#design-decisions) · [Accuracy](#accuracy) ·
+[Scale](#scale-10k-vehicles--100k-listings) · [Cost](#cost) ·
+[Evaluation](#evaluation) · [Testing](#testing) ·
+[Requirements coverage](#requirements-coverage) ·
+[Repository layout](#repository-layout) · [Operating notes](#operating-notes-running-this-in-a-pipeline) ·
+[Limitations & roadmap](#limitations--roadmap-deliberate-in-priority-order) ·
+[Tuning log](#tuning-log) · [Alternatives considered](#alternatives-considered)
+
+---
 
 ## Quickstart
 
@@ -23,39 +49,44 @@ make test                            # full suite (unit / integration / golden)
 
 Configuration is env-based (see `.env.example`); everything defaults to the
 compose stack. The complete output over `inputs.txt` is committed at
-[docs/final-run.txt](docs/final-run.txt).
+[docs/final-run.txt](docs/final-run.txt). For interactive exploration there is
+a local demo console: `python scripts/demo_server.py` → http://localhost:8765.
 
 ## How it works
 
-```
-description ──► normalize ──► extract ──► retrieve ──► score ──► calibrate ──► result
-                              │           (1 SQL       (pure     (pure fn)
-               alias table    │            round-trip)  fn)
-               (in DB)        │                                     │
-                              │                         confidence < gate?
-                              └──── optional LLM extractor ◄────────┘
-                                    (env-gated, cached, fallback-safe)
+```mermaid
+flowchart LR
+    A(["description"]) --> N["normalize"]
+    N --> X["extract"]
+    V[("alias table<br/>in Postgres")] -.-> X
+    X --> R["retrieve<br/>1 SQL round-trip"]
+    R --> S["score<br/>pure function"]
+    S --> C["calibrate<br/>pure function"]
+    C --> G{"confidence<br/>below gate?"}
+    G -- "no  (~90% of traffic)" --> OUT(["vehicle id + confidence 0-10"])
+    G -- "yes" --> L["LLM extractor<br/>optional · cached · fallback-safe"]
+    L -- "re-extracted attributes<br/>(never an ID)" --> R
 ```
 
-- **normalize** – lowercase, strip punctuation (keeping `h/line`, `r-line`
+- **normalize** — lowercase, strip punctuation (keeping `h/line`, `r-line`
   intact), tokenize.
-- **extract** – discourse rules first (corrections like *"it's actually a
+- **extract** — discourse rules first (corrections like *"it's actually a
   Toyota 86 GT"* replace the original mention; *"in exchange for …"* and
   *"engine swap from …"* segments are cut), then a greedy longest-match scan
   against the vocabulary: catalogue makes/models, an alias table (`vw` →
   Volkswagen, `4x4` → Four Wheel Drive, `h/line` → highline…), engine-code
   regexes (`110TSI` → badge token + a *weak* Petrol hint). Nothing is guessed:
   unstated attributes stay `None`.
-- **retrieve** – one round-trip to Postgres choosing recall arms by what was
+- **retrieve** — one round-trip to Postgres choosing recall arms by what was
   extracted: exact/trigram model match, all-of-make, or per-token strict word
   similarity against a generated `search_text` column (all trigram-GIN
   indexed). Retrieval owes recall only; precision is the scorer's job.
-- **score** – per attribute: match, conflict, or unstated. Conflicts are
+- **score** — per attribute: match, conflict, or unstated. Conflicts are
   punished far harder than silence (*unstated ≠ conflict*), badge penalties are
   asymmetric (a stated badge word the candidate lacks hurts more than surplus
   candidate words), weak signals never conflict, and a small `ln(1 +
   listing_count)` prior implements the "most listings wins ties" rule.
-- **calibrate** – confidence from what a reviewer would ask: how much did the
+- **calibrate** — confidence from what a reviewer would ask: how much did the
   text actually say, how far ahead is the winner, does anything contradict it,
   did we have to reinterpret the text to get here. Null results get their own
   scale: recognised-but-absent vehicles (Ford Ranger, Toyota Corolla) are
@@ -76,48 +107,35 @@ Three principles hold everywhere:
 
 ## Design decisions
 
-- **`data.sql` defect** – the vendor file creates `listing` with PK column
-  `it` but INSERTs into `id`; the raw script cannot run. The loader creates
-  the table, renames `it → id`, then runs the vendor INSERT unmodified. The
-  file itself is never edited (CI pins its sha256).
-- **External reference vocabulary** – the alias table also carries common
-  AU-market makes/models that are *not* in the catalogue. That is what turns
-  "Ford Ranger" from "unrecognised text" (a weak null) into "a real vehicle
-  this catalogue provably doesn't carry" (null at 10). Absence detection needs
-  world knowledge; a closed catalogue alone can't provide it.
-- **`strict_word_similarity`, not `word_similarity`** – plain word similarity
-  matches partial-word extents, so the token "cab" scores 0.5 against
-  "**ca**mry" and floods the candidate pool. Strict (whole-word) similarity
-  keeps "amrok" → "amarok" recall while dropping that noise. Found by a failing
-  retrieval test, kept as a regression test.
-- **Fuzzy badge floor at 0.85** – adjacent trim codes are exactly 0.8 apart by
-  SequenceMatcher ("gt"/"gts", "gx"/"gxl") and are *different vehicles*, not
-  typos of each other. Fuzzy badge matching exists for typos of long words.
-- **Generated `search_text` column + GIN** – computed at write time (can't
-  drift, inspectable), GIN over GiST because the workload is read-dominated.
-  At 59 rows Postgres rightly seq-scans; the indexes are for the 10k+
-  requirement and [docs/scale-evidence.txt](docs/scale-evidence.txt) shows them
-  engaging there.
-- **Listing counts as a materialized view** – popularity is a prior, staleness
-  is acceptable; refresh is `REFRESH MATERIALIZED VIEW CONCURRENTLY` out of
-  band, never on the request path.
-- **Two confidence semantics** – match-confidence and null-confidence are
-  different questions and are calibrated by separate functions.
+| decision | rationale |
+|---|---|
+| **`data.sql` defect handled in the loader** | The vendor file creates `listing` with PK column `it` but INSERTs into `id`; the raw script cannot run. The loader creates the table, renames `it → id`, then runs the vendor INSERT unmodified. The file itself is never edited (CI pins its sha256). |
+| **External reference vocabulary** | The alias table also carries common AU-market makes/models that are *not* in the catalogue. That turns "Ford Ranger" from "unrecognised text" (a weak null) into "a real vehicle this catalogue provably doesn't carry" (null at 10). Absence detection needs world knowledge; a closed catalogue alone can't provide it. |
+| **`strict_word_similarity`, not `word_similarity`** | Plain word similarity matches partial-word extents, so the token "cab" scores 0.5 against "**ca**mry" and floods the candidate pool. Strict (whole-word) similarity keeps "amrok" → "amarok" recall while dropping that noise. Found by a failing retrieval test, kept as a regression test. |
+| **Fuzzy badge floor at 0.85** | Adjacent trim codes are exactly 0.8 apart by SequenceMatcher ("gt"/"gts", "gx"/"gxl") and are *different vehicles*, not typos of each other. Fuzzy badge matching exists for typos of long words. |
+| **Generated `search_text` column + GIN** | Computed at write time (can't drift, inspectable); GIN over GiST because the workload is read-dominated. At 59 rows Postgres rightly seq-scans; the indexes are for the 10k+ requirement and [docs/scale-evidence.txt](docs/scale-evidence.txt) shows them engaging there. |
+| **Listing counts as a materialized view** | Popularity is a prior; staleness is acceptable. Refresh is `REFRESH MATERIALIZED VIEW CONCURRENTLY`, out of band, never on the request path. |
+| **Two confidence semantics** | Match-confidence and null-confidence are different questions and are calibrated by separate functions. |
 
 ## Accuracy
 
 The only ground truth provided is the four README examples; all four reproduce
-exactly (`tests/golden/`): Golf 110TSI Comfortline → `…3712 @ 9`, Amarok
-Ultimate → `…4496 @ 7`, Golf R engine swap → `…8640 @ 6` (modified-vehicle cap),
-Ford Ranger → `null @ 10`.
+exactly (`tests/golden/`):
+
+| input | result |
+|---|---|
+| Volkswagen Golf 110TSI Comfortline Petrol Automatic FWD | `4749339721203712` @ **9** |
+| VW Amarok Ultimate | `4951649860714496` @ **7** |
+| VW Golf R with engine swap from Toyota 86 GT | `5824662093168640` @ **6** (modified-vehicle cap) |
+| Ford Ranger XLT Dual Cab | `null` @ **10** |
 
 For the remaining 16 inputs the full output is snapshot-locked — any behaviour
 change shows up in review as a diff. Spot checks worth calling out: the
 Kluger→86 GT correction resolves to the 86 GT with the tie broken by listing
 count; "Amrok h/line 4x4" reaches Amarok TDI550 Highline through fuzzy
-retrieval at modest confidence; "Toyota Corolla Ascent Sport
-Auto" is a confident null (Corolla is real and absent) even though Camry
-Ascent Sport candidates score superficially well.
+retrieval at modest confidence; "Toyota Corolla Ascent Sport Auto" is a
+confident null (Corolla is real and absent) even though Camry Ascent Sport
+candidates score superficially well.
 
 Genuinely ambiguous inputs ("Toyota Camry Hybrid" — three hybrid Camrys) are
 answered at modest confidence with the most-listed candidate, which is
@@ -132,7 +150,7 @@ catalogue and runs the real matcher over 1,000 mixed-style queries
 | metric | value |
 |---|---|
 | p50 / p95 / max latency | **7.8 ms / 41.8 ms / 150 ms** |
-| matched | 949/1000 (misses are the deliberately garbled styles, returned as low-confidence nulls) |
+| matched | 949/1000 (misses are the intentionally garbled styles, returned as low-confidence nulls) |
 | model arm plan | BitmapOr over btree + trigram GIN, 0.55 ms |
 | token arm plan | Bitmap Index Scan on `search_text` GIN, 4.9 ms |
 
@@ -147,8 +165,8 @@ The rules path costs effectively nothing per call. With the LLM tier enabled,
 only descriptions below the confidence gate escalate (2/20 challenge inputs at
 the default gate of 5; ~5–15% on realistic traffic), responses are cached by
 content hash, and a Haiku-class model at ~750 tokens/call (~$0.0014/call) puts
-the blended cost around $0.0001–0.0002 per description matched. The gate is the
-accuracy–cost dial: raise it for accuracy, lower it for cost.
+the blended cost around **$0.0001–0.0002 per description matched**. The gate is
+the accuracy–cost dial: raise it for accuracy, lower it for cost.
 
 ## Evaluation
 
@@ -157,11 +175,19 @@ accuracy–cost dial: raise it for accuracy, lower it for cost.
 where a description is genuinely ambiguous) and prints the scorecard that
 matters for this use case: top-1 accuracy, match/null precision and recall,
 MRR, and a reliability table checking that higher confidence actually means
-higher accuracy. Current result: 21/21, calibration monotone. The same
-scorecard runs as a regression gate in the test suite (`test_evaluation.py`,
-floor at 90%) — accuracy changes fail the build instead of being noticed
-later. Growing the CSV with labeled production samples is the intended
-feedback loop.
+higher accuracy.
+
+```
+top-1 accuracy:   100.0%      null precision:  100.0%
+match precision:  100.0%      null recall:     100.0%
+match recall:     100.0%      MRR:             1.000
+reliability: low 0-4 -> 100% · mid 5-7 -> 100% · high 8-10 -> 100%
+```
+
+The same scorecard runs as a regression gate in the test suite
+(`test_evaluation.py`, floor at 90%) — accuracy changes fail the build instead
+of being noticed later. Growing the CSV with labeled production samples is the
+intended feedback loop.
 
 ## Testing
 
@@ -169,21 +195,21 @@ feedback loop.
 
 | layer | what it proves |
 |---|---|
-| unit (no DB, ms) | normalizer, extractor discourse rules, scorer weight semantics, calibrator branches, LLM contract (stub client, offline) |
-| property (hypothesis) | no exception on arbitrary unicode; confidence always 0–10; extraction/scoring deterministic |
-| integration (real PG) | load idempotency, row counts 59/1000, `it→id` repair, index existence, **recall invariant** (the true vehicle must be in the candidate set), SQL-injection-shaped text leaves the DB intact; **fault injection** (a dead database raises — an outage must never impersonate a null match) and thread-consistency under concurrent use; destructive loader paths (abort-on-bad-counts, MV refresh semantics) against a scratch database created and dropped per run |
-| golden | 4 anchors exact; a **semantic expectation for every one of the 20 inputs** (`test_expected_results.py` — exact IDs where the answer is pinned, required properties where it's ambiguous); byte-level snapshot of the full run; CLI output format; LLM gating/routing with a stub extractor; the **evaluation scorecard as a gate** (accuracy floor, perfect absence detection, monotone calibration); a **recorded real API response** replayed offline (pins the actual wire shape against SDK/schema drift) |
-| robustness | degenerate/hostile input (unicode, emoji, 10k-char tokens, echoed output format, SQL-shaped text), token-permutation stability, case/whitespace insensitivity, end-to-end confidence monotonicity (more agreeing detail never lowers confidence; conflicting detail never raises it), DB unchanged after a hostile batch |
+| **unit** (no DB, ms) | normalizer, extractor discourse rules, scorer weight semantics, calibrator branches, LLM contract (stub client, offline) |
+| **property** (hypothesis) | no exception on arbitrary unicode; confidence always 0–10; extraction/scoring deterministic |
+| **integration** (real PG) | load idempotency, row counts 59/1000, `it→id` repair, index existence, **recall invariant** (the true vehicle must be in the candidate set), SQL-injection-shaped text leaves the DB intact; **fault injection** (a dead database raises — an outage must never impersonate a null match) and thread-consistency under concurrent use; destructive loader paths (abort-on-bad-counts, MV refresh semantics) against a scratch database created and dropped per run |
+| **golden** | 4 anchors exact; a **semantic expectation for every one of the 20 inputs** (exact IDs where the answer is pinned, required properties where it's ambiguous); byte-level snapshot of the full run; CLI output format; LLM gating/routing with a stub extractor; the **evaluation scorecard as a gate**; a **recorded real API response** replayed offline (pins the actual wire shape against SDK/schema drift) |
+| **robustness** | degenerate/hostile input (unicode, emoji, 10k-char tokens, echoed output format, SQL-shaped text), token-permutation stability, case/whitespace insensitivity, end-to-end confidence monotonicity (more agreeing detail never lowers confidence; conflicting detail never raises it), DB unchanged after a hostile batch |
 
-CI (`.github/workflows/ci.yml`) runs lint → strict mypy → data-integrity
+**CI** (`.github/workflows/ci.yml`): lint → strict mypy → data-integrity
 checksum → full suite with a coverage gate (currently 93%, scorer/calibrator
 at ~100%) → a smoke run asserting 20 results.
 
-Nightly (`.github/workflows/nightly.yml`) runs the slow checks: **mutation
+**Nightly** (`.github/workflows/nightly.yml`): the slow checks — **mutation
 testing** on scorer + calibrator (proves the tests fail when the logic is
 perturbed, not merely that lines were executed; report-only) and the
-**10k-vehicle scale benchmark with a hard p95 budget**, so a change that
-loses an index fails a build rather than degrading in production.
+**10k-vehicle scale benchmark with a hard p95 budget**, so a change that loses
+an index fails a build rather than degrading in production.
 
 ## Requirements coverage
 
@@ -191,9 +217,9 @@ loses an index fails a build rather than degrading in production.
 |---|---|
 | result for every description in `inputs.txt` | CLI over the file; `test_every_description_produces_a_result`, `test_matrix_covers_every_input_line`, CI smoke run asserts 20 |
 | vehicle ID + confidence 0–10 per description | output contract test (`test_cli.py`); hypothesis property: confidence ∈ [0, 10] for arbitrary input |
-| null match allowed; null confidence = certainty of absence | `null_confidence` branch (`calibrator.py`); Ford Ranger → null@10, Corolla → null@9, garbled → null@3 (`test_calibrator.py`, golden) |
+| null match allowed; null confidence = certainty of absence | `null_confidence` branch (`calibrator.py`); Ford Ranger → null@10, Corolla → null@9, garbled → null@3 |
 | fewer stated attributes ⇒ lower confidence | specificity term + unstated penalty; monotonicity ladder tests (unit + end-to-end) |
-| equal likelihood ⇒ most listings wins | listing prior + `(score, listing_count, id)` sort key; `test_tiebreak_by_listing_count` (unit + golden against real counts) |
+| equal likelihood ⇒ most listings wins | listing prior + `(score, listing_count, id)` sort key; tie-break tests (unit + golden against real counts) |
 | program queries the tables via SQL | all retrieval in `retrieval.py` against live Postgres; integration suite runs it |
 | `data.sql` not edited | repair happens in the loader; CI pins the file's sha256 |
 | scales to 10k+ vehicles / 100k+ listings | trigram/GIN infrastructure + [scale evidence](docs/scale-evidence.txt): p50 7.8 ms, index plans captured |
@@ -278,79 +304,21 @@ catalogue outgrows lexical recall.
 
 ## Alternatives considered
 
-This task is an entity-matching problem — a field with fifty years of
-literature to steal from. The chosen architecture (hybrid lexical retrieval +
-deterministic scoring, with a confidence-gated LLM extraction tier) was
-weighed against the other credible ways to build it:
+The chosen hybrid (lexical retrieval + deterministic scoring in the classical
+Fellegi-Sunter style [1], with a gated LLM extraction tier) against the other
+credible approaches:
 
-**Pure rules / regex matching.**
-*Pros:* free per call, microsecond latency, fully explainable, no
-dependencies. *Cons:* every new abbreviation or phrasing is a code change;
-accuracy decays silently as marketplace language drifts; discourse cases
-("it's actually a…") become a thicket of special cases. Rejected as the
-whole answer — but kept as the spine, with the vocabulary moved to data and
-an LLM behind a gate to cover what rules can't. The attribute-agreement
-scoring itself follows the classical record-linkage formulation of Fellegi &
-Sunter [1], where per-field agreement/disagreement evidence is combined into
-a match decision — here with hand weights standing in for learned ones until
-labels exist.
+| approach | pros | cons / limitation | verdict |
+|---|---|---|---|
+| **Pure rules/regex** | free, fast, explainable | silent decay as language drifts; every new phrasing is a code change | kept as the spine, vocabulary moved to data, LLM gate covers the rest |
+| **LLM matches end-to-end** | best comprehension of messy text [2] | cost + latency per call; non-deterministic; self-reported confidence is poorly calibrated [3]; hallucinated IDs; catalogue outgrows the prompt | reduced to extraction-only |
+| **Fine-tuned transformer (Ditto-style)** | SOTA on matching benchmarks [4] | needs thousands of labeled pairs, GPU serving, retraining per catalogue | premature with 20 labels |
+| **Embeddings / vector similarity** | typo- and paraphrase-robust | blind to GT/GTS-level distinctions; uncalibrated; weak absence detection; lexical beats dense out-of-domain [5] | rejected as matcher; roadmap recall backstop |
+| **Elasticsearch/OpenSearch** | mature relevance tooling | a second stateful system for a problem pg_trgm [6] already solves in single-digit ms (measured) | rejected on operational cost |
+| **Learned scorer (GBDT [7] / Splink [8], calibrated [9])** | strongest long-term accuracy; measurable confidence | needs labels that don't exist on day one | sequenced: current scorer becomes its feature vector; eval set seeds its training data |
 
-**LLM does the matching end-to-end** (catalogue + description in the prompt,
-model returns an ID).
-*Pros:* best raw comprehension of messy text; minimal code. Peeters & Bizer
-[2] show GPT-class models matching or beating fine-tuned baselines on entity
-matching with little or no task-specific training data — the comprehension
-advantage is real. *Cons:* cost and latency on every call (wrong side of the
-accuracy>cost>latency ordering at pipeline volume); non-deterministic and
-hard to replay; confidence is self-reported, and LLM self-reported certainty
-is known to be poorly calibrated — miscalibration of modern neural models is
-well documented [3]; hallucinated IDs are a real failure mode; the catalogue
-no longer fits in a prompt at 10k+ vehicles. Rejected — reduced instead to
-extraction-only, where every one of those weaknesses is contained.
-
-**Fine-tuned transformer matcher** (e.g. Ditto-style: cast matching as
-sequence-pair classification over a pre-trained language model).
-*Pros:* state-of-the-art accuracy on standard entity-matching benchmarks [4].
-*Cons:* needs thousands of labeled pairs, GPU serving, and per-catalogue
-retraining; explanations are post-hoc. The right tool at a different point on
-the data-availability curve; premature with 20 examples of ground truth.
-
-**Embedding / vector similarity matching** (encode description and vehicles,
-match by cosine distance).
-*Pros:* robust to typos and paraphrase; no vocabulary maintenance. *Cons:*
-blind to the distinctions that decide this domain — "GT" vs "GTS" vs "GTS
-Apollo" are near-identical in embedding space but different vehicles;
-similarity scores don't calibrate to "confidence the match is correct";
-absence detection ("Ford Ranger" → confident null) is weak because something
-is always nearest. The BEIR benchmark [5] documents the underlying issue:
-dense retrievers underperform lexical baselines out of domain, and short
-attribute-dense strings like trim codes are exactly where lexical signal
-wins. Rejected as the matcher; roadmapped as a recall backstop once the
-catalogue outgrows trigram recall.
-
-**Search engine (Elasticsearch/OpenSearch) for retrieval.**
-*Pros:* mature relevance tooling, fuzziness and analyzers out of the box.
-*Cons:* a second stateful system to deploy, sync, and secure — for a
-catalogue that fits in Postgres trigram indexes [6] with single-digit-ms
-plans (measured); the ranking problem here is attribute agreement, not text
-relevance, so most of its machinery goes unused. Rejected on operational
-cost; pg_trgm covers the need inside the database we already have.
-
-**Learned scorer over attribute features** (gradient-boosted ranker [7] or
-probabilistic linkage à la Splink [8]).
-*Pros:* the strongest long-term accuracy; weights maintain themselves from
-data; confidence becomes a measured probability via standard calibration
-techniques (Platt/isotonic [9]). *Cons:* needs labeled pairs that don't
-exist on day one; a cold-start model trained on 20 examples would be noise;
-adds training/versioning infrastructure. Not rejected — **sequenced**: the
-deterministic scorer's per-attribute classifications are designed to become
-its feature vector, and the labeled eval set is the seed of its training
-data (see roadmap).
-
-The common thread: each alternative fails on one of the brief's three axes
-(accuracy, cost, latency) or on operability, while the hybrid keeps the
-deterministic path for the ~90% of traffic that is unambiguous and spends
-money only where the text is genuinely hard.
+Each rejected option fails one of the brief's axes (accuracy, cost, latency)
+or operability; the hybrid spends money only where the text is genuinely hard.
 
 ### References
 
@@ -367,12 +335,12 @@ money only where the text is genuinely hard.
 5. Thakur, N. et al. — *BEIR: A Heterogeneous Benchmark for Zero-shot
    Evaluation of Information Retrieval Models*. NeurIPS 2021.
    [arXiv:2104.08663](https://arxiv.org/abs/2104.08663).
-6. PostgreSQL documentation — [*pg_trgm: trigram matching*]
-   (https://www.postgresql.org/docs/current/pgtrgm.html).
+6. PostgreSQL documentation —
+   [*pg_trgm: trigram matching*](https://www.postgresql.org/docs/current/pgtrgm.html).
 7. Ke, G. et al. — *LightGBM: A Highly Efficient Gradient Boosting Decision
    Tree*. NeurIPS 2017.
-8. Linacre, R. et al. — *Splink: MoJ's open-source library for probabilistic
-   record linkage at scale* (Fellegi-Sunter in practice).
+8. Linacre, R. et al. — *Splink: probabilistic record linkage at scale*
+   (Fellegi-Sunter in practice).
    [github.com/moj-analytical-services/splink](https://github.com/moj-analytical-services/splink).
 9. Niculescu-Mizil, A. & Caruana, R. — *Predicting Good Probabilities with
    Supervised Learning*. ICML 2005 (Platt scaling vs isotonic regression).
