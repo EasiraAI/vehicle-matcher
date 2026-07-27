@@ -104,6 +104,63 @@ Three principles hold everywhere:
 - **Two confidence semantics** – match-confidence and null-confidence are
   different questions and are calibrated by separate functions.
 
+## Alternatives considered
+
+The chosen architecture (hybrid lexical retrieval + deterministic scoring,
+with a confidence-gated LLM extraction tier) was weighed against the other
+credible ways to build this. In brief:
+
+**Pure rules / regex matching.**
+*Pros:* free per call, microsecond latency, fully explainable, no
+dependencies. *Cons:* every new abbreviation or phrasing is a code change;
+accuracy decays silently as marketplace language drifts; discourse cases
+("it's actually a…") become a thicket of special cases. Rejected as the
+whole answer — but kept as the spine, with the vocabulary moved to data and
+an LLM behind a gate to cover what rules can't.
+
+**LLM does the matching end-to-end** (catalogue + description in the prompt,
+model returns an ID).
+*Pros:* best raw comprehension of messy text; minimal code. *Cons:* cost and
+latency on every call (wrong side of the accuracy>cost>latency ordering at
+pipeline volume); non-deterministic and hard to replay; confidence is
+self-reported rather than measurable; hallucinated IDs are a real failure
+mode; the catalogue no longer fits in a prompt at 10k+ vehicles. Rejected —
+reduced instead to extraction-only, where every one of those weaknesses is
+contained.
+
+**Embedding / vector similarity matching** (encode description and vehicles,
+match by cosine distance).
+*Pros:* robust to typos and paraphrase; no vocabulary maintenance. *Cons:*
+blind to the distinctions that decide this domain — "GT" vs "GTS" vs "GTS
+Apollo" are near-identical in embedding space but different vehicles;
+similarity scores don't calibrate to "confidence the match is correct";
+absence detection ("Ford Ranger" → confident null) is weak because something
+is always nearest. Rejected as the matcher; noted on the roadmap as a recall
+backstop once the catalogue outgrows trigram recall.
+
+**Search engine (Elasticsearch/OpenSearch) for retrieval.**
+*Pros:* mature relevance tooling, fuzziness and analyzers out of the box.
+*Cons:* a second stateful system to deploy, sync, and secure — for a
+catalogue that fits in Postgres trigram indexes with single-digit-ms plans
+(measured); the ranking problem here is attribute agreement, not text
+relevance, so most of its machinery goes unused. Rejected on operational
+cost; pg_trgm covers the need inside the database we already have.
+
+**Learned matcher** (gradient-boosted ranker or probabilistic record linkage
+over attribute-agreement features).
+*Pros:* the strongest long-term accuracy; weights maintain themselves from
+data; calibration comes out measurable. *Cons:* needs labeled pairs that
+don't exist on day one; a cold-start model trained on 20 examples would be
+noise; adds training/versioning infrastructure. Not rejected — **sequenced**:
+the deterministic scorer's attribute classifications are designed to become
+its feature vector, and the labeled eval set is the seed of its training
+data (see roadmap).
+
+The common thread: each alternative fails on one of the brief's three axes
+(accuracy, cost, latency) or on operability, while the hybrid keeps the
+deterministic path for the ~90% of traffic that is unambiguous and spends
+money only where the text is genuinely hard.
+
 ## Accuracy
 
 The only ground truth provided is the four README examples; all four reproduce
