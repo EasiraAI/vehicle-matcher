@@ -29,7 +29,6 @@ Confidence: 7
 [Design decisions](#design-decisions) · [Accuracy](#accuracy) ·
 [Scale](#scale-10k-vehicles--100k-listings) · [Cost](#cost) ·
 [Evaluation](#evaluation) · [Testing](#testing) ·
-[Requirements coverage](#requirements-coverage) ·
 [Layout](#repository-layout) · [Operating notes](#operating-notes) ·
 [Roadmap](#limitations--roadmap) · [Tuning log](#tuning-log) ·
 [Alternatives](#alternatives-considered)
@@ -173,21 +172,6 @@ labeled production samples is the intended feedback loop.
 **CI**: lint → strict mypy → data checksum → suite + coverage gate → smoke run.
 **Nightly**: mutation testing on the scoring core (report-only) + the 10k
 benchmark under a hard p95 budget.
-
-## Requirements coverage
-
-| challenge requirement | satisfied / proven by |
-|---|---|
-| result for every description | CLI + golden count tests + CI smoke run |
-| ID + confidence 0–10 | output contract test; property: range holds for arbitrary input |
-| null allowed; null confidence = certainty of absence | `null_confidence` branch; Ranger→null@10, Corolla→null@9, garbled→null@3 |
-| fewer attributes ⇒ lower confidence | specificity term; monotonicity ladders (unit + e2e) |
-| ties → most listings | listing prior + sort key; tie-break tests vs real counts |
-| SQL access to both tables | all retrieval in `retrieval.py` on live Postgres |
-| `data.sql` untouched | repair in loader; CI pins sha256 |
-| 10k+/100k+ scale | GIN infrastructure + [measured evidence](docs/scale-evidence.txt) |
-| accuracy > cost > latency | free deterministic core; gated LLM spend; anchors + eval matrix |
-| production practices | typed, linted, CI as code, migrations, coverage gate, versioned + logged decisions |
 
 ## Repository layout
 
